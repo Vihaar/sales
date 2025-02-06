@@ -205,3 +205,7 @@ def generate_sales_doc(name: str = Query(...), company: str = Query(...)):
 
 # Mount the directory where index.html is located
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=int(os.getenv("PORT", 8000)))
