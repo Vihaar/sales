@@ -21,6 +21,13 @@ REDDIT_CLIENT_ID = os.getenv("REDDIT_CLIENT_ID")
 REDDIT_CLIENT_SECRET = os.getenv("REDDIT_CLIENT_SECRET")
 REDDIT_USERNAME = os.getenv("REDDIT_USERNAME")
 REDDIT_PASSWORD = os.getenv("REDDIT_PASSWORD")
+TEST_MODE = os.getenv("TEST_MODE", "false").lower() == "true"
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+openai.api_key = OPENAI_API_KEY
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+GOOGLE_CSE_ID = os.getenv("GOOGLE_CSE_ID")
+
+
 
 reddit = praw.Reddit(
     client_id=REDDIT_CLIENT_ID,
@@ -73,19 +80,7 @@ def get_reddit_pain_points(company: str):
     except Exception as e:
         return [f"Error fetching Reddit data: {str(e)}"]
 
-# Set your OpenAI API key
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-openai.api_key = OPENAI_API_KEY
-
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-GOOGLE_CSE_ID = os.getenv("GOOGLE_CSE_ID")
-
-# Load environment variables from .env
-load_dotenv()
-
-# Get OpenAI API Key
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-
+# Load environment variables from .en
 print(f"API Key Loaded: {bool(OPENAI_API_KEY)}")  # Should print True
 
 client = OpenAI(
@@ -94,6 +89,8 @@ client = OpenAI(
 
 # Function to fetch company pain points using Google Search API
 def get_company_pain_points(company: str):
+    if TEST_MODE:
+        return [f"Mock pain point 1 for {company}", f"Mock pain point 2 for {company}"]
     if not GOOGLE_API_KEY or not GOOGLE_CSE_ID:
         return ["Google API Key or CSE ID is missing."]
 
@@ -118,6 +115,8 @@ def get_company_pain_points(company: str):
 
 # Function to generate personalized sales copy
 def generate_sales_copy(name: str, company: str, pain_points: list):
+    if TEST_MODE:
+        return f"Mock sales email for {name} at {company}. Pain points: {', '.join(pain_points)}"
     prompt = f"""
     You are a sales expert. A salesperson is reaching out to {name} at {company}.
     The company is currently facing these challenges:
@@ -142,12 +141,12 @@ def get_crunchbase_data(company_name):
     
     response = requests.get(search_url, headers=headers)
     if response.status_code != 200:
-        return "Could not fetch Crunchbase data."
-    
+        return ["Could not fetch Crunchbase data."]  # Return as a list instead of a string
+
     soup = BeautifulSoup(response.text, "html.parser")
     funding_info = soup.find_all("span", class_="component--field-formatter field-type-money")
-    
-    return funding_info[:3] if funding_info else ["No funding data found."]
+
+    return [info.text for info in funding_info[:3]] if funding_info else ["No funding data found."]
 
 @app.get("/generate-sales-copy")
 def generate_sales_message(name: str = Query(...), company: str = Query(...), twitter_handle: str = Query(None)):
