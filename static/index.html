@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Copy Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        input {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        .result-section {
+            margin-top: 20px;
+            display: none;
+        }
+
+        .section-title {
+            color: #333;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 5px;
+            margin-top: 20px;
+        }
+
+        .loading {
+            display: none;
+            margin: 20px 0;
+            color: #666;
+        }
+
+        .error {
+            color: #dc3545;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Generate Sales Copy</h1>
+        <div class="form-group">
+            <label>Name:</label>
+            <input type="text" id="nameInput">
+        </div>
+        <div class="form-group">
+            <label>Company:</label>
+            <input type="text" id="companyInput">
+        </div>
+        <div class="form-group">
+            <label>Twitter Handle (optional):</label>
+            <input type="text" id="twitterInput">
+        </div>
+        <button onclick="generateCopy()">Generate</button>
+        
+        <div class="loading" id="loading">Generating sales copy...</div>
+        <div class="error" id="error"></div>
+
+        <div class="result-section" id="results">
+            <h2 class="section-title">Generated Sales Copy</h2>
+            <div id="salesCopy"></div>
+
+            <h2 class="section-title">Identified Pain Points</h2>
+            <ul id="painPoints"></ul>
+
+            <h2 class="section-title">Funding Information</h2>
+            <div id="fundingInfo"></div>
+
+            <h2 class="section-title">Twitter Insights</h2>
+            <ul id="twitterInsights"></ul>
+        </div>
+    </div>
+
+    <script>
+        async function generateCopy() {
+            const name = document.getElementById('nameInput').value;
+            const company = document.getElementById('companyInput').value;
+            const twitter = document.getElementById('twitterInput').value;
+
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('error').textContent = '';
+            document.getElementById('results').style.display = 'none';
+
+            try {
+                const response = await fetch(`http://localhost:8000/generate-sales-copy?name=${encodeURIComponent(name)}&company=${encodeURIComponent(company)}${twitter ? `&twitter_handle=${encodeURIComponent(twitter)}` : ''}`);
+                
+                if (!response.ok) {
+                    throw new Error(`API request failed: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                // Update UI with results
+                document.getElementById('salesCopy').innerHTML = data.sales_copy.replace(/\n/g, '<br>');
+                document.getElementById('painPoints').innerHTML = data.pain_points.map(p => `<li>${p}</li>`).join('');
+                document.getElementById('fundingInfo').textContent = data.funding_info.join(', ');
+                document.getElementById('twitterInsights').innerHTML = data.executive_twitter_insights.map(t => `<li>${t}</li>`).join('');
+                
+                document.getElementById('results').style.display = 'block';
+            } catch (error) {
+                document.getElementById('error').textContent = error.message;
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
