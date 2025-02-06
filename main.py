@@ -12,14 +12,11 @@ from fastapi.staticfiles import StaticFiles
 import json
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
-
 app = FastAPI()
 
-# Mount the directory where index.html is located
-app.mount("/", StaticFiles(directory="static", html=True), name="static")
 load_dotenv()
 
-app = FastAPI()
+
 REDDIT_CLIENT_ID = os.getenv("REDDIT_CLIENT_ID")
 REDDIT_CLIENT_SECRET = os.getenv("REDDIT_CLIENT_SECRET")
 REDDIT_USERNAME = os.getenv("REDDIT_USERNAME")
