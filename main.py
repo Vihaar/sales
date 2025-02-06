@@ -9,6 +9,9 @@ import praw
 from bs4 import BeautifulSoup
 import subprocess
 from fastapi.staticfiles import StaticFiles
+import json
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
 
 app = FastAPI()
 
@@ -147,6 +150,28 @@ def get_crunchbase_data(company_name):
     funding_info = soup.find_all("span", class_="component--field-formatter field-type-money")
 
     return [info.text for info in funding_info[:3]] if funding_info else ["No funding data found."]
+# Load Google Service Account Credentials
+SERVICE_ACCOUNT_FILE = "google_auth.json"  # Path to your JSON key file
+SCOPES = ["https://www.googleapis.com/auth/documents", "https://www.googleapis.com/auth/drive"]
+
+# Authenticate with Google Docs API
+def get_google_docs_service():
+    creds = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
+    return build("docs", "v1", credentials=creds)
+
+# Function to create a Google Doc with the sales copy
+def create_google_doc(sales_copy, doc_title="Generated Sales Copy"):
+    service = get_google_docs_service()
+    
+    # Create a new Google Doc
+    doc = service.documents().create(body={"title": doc_title}).execute()
+    doc_id = doc["documentId"]
+
+    # Add content to the document
+    requests = [{"insertText": {"location": {"index": 1}, "text": sales_copy}}]
+    service.documents().batchUpdate(documentId=doc_id, body={"requests": requests}).execute()
+
+    return f"https://docs.google.com/document/d/{doc_id}"
 
 @app.get("/generate-sales-copy")
 def generate_sales_message(name: str = Query(...), company: str = Query(...), twitter_handle: str = Query(None)):
@@ -168,9 +193,17 @@ def generate_sales_message(name: str = Query(...), company: str = Query(...), tw
         "sales_copy": sales_copy
     }
 
-@app.get("/check-key")
-def check_key():
-    return {"openai_key": "Loaded Successfully" if OPENAI_API_KEY else "Key Not Found"}
+# FastAPI endpoint to generate sales copy and create Google Doc
+@app.get("/generate-sales-doc")
+def generate_sales_doc(name: str = Query(...), company: str = Query(...)):
+    # Generate sales copy
+    pain_points = ["Pain point 1", "Pain point 2"]  # Mock for now
+    sales_copy = generate_sales_copy(name, company, pain_points)
+
+    # Create Google Doc
+    doc_link = create_google_doc(sales_copy)
+
+    return {"google_doc_url": doc_link, "sales_copy": sales_copy}
 # Run the app with: uvicorn main:app --reload
 
 # Mount the directory where index.html is located
